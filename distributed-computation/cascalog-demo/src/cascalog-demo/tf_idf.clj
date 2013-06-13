@@ -1,29 +1,11 @@
 (ns cascalog-demo.tf-idf
-  (:require [clojure.string :as str]
+  (:require [cascalog-demo.tf-idf.samples :as samples]
+            [clojure.string :as str]
             [cascalog.api :refer :all]
             [cascalog.ops :as c]))
 
 (def stopwords
-  #{"a" "is" "of" "i" "the" "this" "you"})
-
-(def document-1
-  "The quick brown fox jumps over the lazy dog.")
-
-(def document-2
-  "A fox is a kind of dog.")
-
-(def document-3
-  "Hey guy, let me e-mail you this great dog GIF I found.")
-
-(def documents
-  (map-indexed (fn [idx s]
-                 [(str "document:" idx) s])
-               (map (comp (fn [s]
-                            (str/replace s #"[^a-z\s]" ""))
-                          str/lower-case)
-                    (vector document-1
-                            document-2
-                            document-3))))
+  #{"a" "is" "of" "i" "the" "this" "you" "off" "ok" "should" "dont" "your" "youre" "on" "to" "but" "his" "it" "all" "him"})
 
 (defn stopword? [s]
   (contains? stopwords s))
@@ -85,11 +67,21 @@
       (inv-doc-freq ?word ?idf)
       (* ?tf ?idf :> ?tf-idf)))
 
-;; (let [source documents
-;;       n (count documents)
+(defbufferop [top-n [n]]
+  [tuples]
+  (take n
+        (sort-by last
+                 >
+                 tuples)))
+
+;; (let [source samples/documents
+;;       n (count source)
 ;;       word-freqs (document-word-frequencies source)
 ;;       max-word-freqs (document-max-word-frequency word-freqs)
-;;       term-freq (term-frequency word-freqs max-word-freqs)
-;;       inv-doc-freq (inverse-document-frequency n word-freqs)]
+;;       term-freq (term-frequency word-freqs (document-max-word-frequency word-freqs))
+;;       inv-doc-freq (inverse-document-frequency n word-freqs)
+;;       source (tf-idf term-freq inv-doc-freq)]
 ;;   (?- (stdout)
-;;       (tf-idf term-freq inv-doc-freq)))
+;;       (<- [?document ?b ?c]
+;;           (source ?document ?word ?tf-idf)
+;;           (top-n 10 ?word ?tf-idf :> ?b ?c))))
